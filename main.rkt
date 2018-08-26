@@ -6,7 +6,7 @@
          | <bool>
          | (if <expr> <expr> <expr>)
          | (+ <expr> <expr>)
-         | '< <s-expr> <s-expr>)
+         | (< <s-expr> <s-expr>)
          | (* <s-expr> <s-expr>)
          | (= <s-expr> <s-expr>)
          | (- <s-expr> <s-expr>)
@@ -20,9 +20,9 @@
 
 
 ;EXTENSION PARA CLASE Y OBJETOS
-<expr>  ::= ... (todo lo anterior)        
-         | (class <expr> <member> ...)
-         | (class <expr> <: <expr> <member> ...)
+<expr>  ::= ...
+         | (class <member> ...)
+         | (class <: <expr> <member> ...)
          | (new <expr>)
          | this
          | (super id <expr> ...)
@@ -44,7 +44,13 @@
   (unop f s)
   (my-if c tb fb)  
   (seqn expr1 expr2)  
-  (lcal defs body))
+  (lcal defs body)
+  (class defs)
+  (new obj)
+  (get obj fld)
+  (set obj fld newval)
+  (send obj msg val)
+  (this))
 
 ;; values
 (deftype Val
