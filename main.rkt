@@ -222,7 +222,16 @@ Este método no crea un nuevo ambiente.
                              (extend-frame-env! 'this (first vals) newenv)
                              (interp (apply (cddr (assoc (id (second vals)) methods)) (cddr vals)) newenv)))
                          (error "method not found"))]))])
-         class))]))
+         class))]
+    [(new cls) ((interp cls) 'create)]
+    [(get oj fld)(interp
+                  (let ([obj (interp oj env)])
+                    ((obj-class obj) 'read obj fld))
+                  env)]
+    [(set oj fld newval)(let ([obj (interp oj env)])
+                          ((obj-class obj) 'write obj fld (num (open-val (interp newval env)))))]
+    [(send oj msg vals) (let ([obj (interp oj env)]) ((obj-class obj) 'invoke obj msg vals))]
+    [(this)(interp (id 'this) env)]))
 
   
 
