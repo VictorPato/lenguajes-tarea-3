@@ -46,10 +46,10 @@
   (seqn expr1 expr2)  
   (lcal defs body)
   (class defs)
-  (new obj)
+  (new cls)
   (get obj fld)
   (set obj fld newval)
-  (send obj msg val)
+  (send obj msg vals)
   (this))
 
 ;; values
@@ -59,6 +59,10 @@
 
 (deftype Def
   (my-def id expr))
+
+(deftype Member
+  (field mid val)
+  (method mid param body))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -122,6 +126,7 @@ Este método no crea un nuevo ambiente.
 (define (parse s-expr)
   (match s-expr
     [(? number?) (num s-expr)]
+    ['this (this)]
     [(? symbol?) (id s-expr)]    
     [(? boolean?) (bool s-expr)]
     [(list '* l r) (binop * (parse l) (parse r))]
@@ -138,6 +143,13 @@ Este método no crea un nuevo ambiente.
     [(list 'seqn e1 e2) (seqn (parse e1) (parse e2))]    
     [(list 'local (list e ...)  b)
      (lcal (map parse-def e) (parse b))]
+    [(list 'class defs)(class (map parse defs))]
+    [(list 'new cls)(new (parse cls))]
+    [(list 'get obj fld)(get (parse obj) fld)]
+    [(list 'set obj fld newval) (set (parse obj) fld (parse newval))]
+    [(list 'send obj msg vals ...) (send (parse obj) msg (map parse vals))]
+    [(list 'field mid bod) (field (parse mid) (parse bod))]
+    [(list 'method mid (list param ...) body) (method (parse mid) param (parse body))]
     ))
 
 
