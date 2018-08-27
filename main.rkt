@@ -45,7 +45,7 @@
   (my-if c tb fb)  
   (seqn expr1 expr2)  
   (lcal defs body)
-  (class members)
+  (clas members)
   (new cls)
   (get oj fld)
   (set oj fld newval)
@@ -144,7 +144,7 @@ Este método no crea un nuevo ambiente.
     [(list 'seqn e1 e2) (seqn (parse e1) (parse e2))]    
     [(list 'local (list e ...)  b)
      (lcal (map parse-def e) (parse b))]
-    [(list 'class members)(class (map parse members))]
+    [(list 'class members)(clas (map parse members))]
     [(list 'new cls)(new (parse cls))]
     [(list 'get obj fld)(get (parse obj) fld)]
     [(list 'set obj fld newval) (set (parse obj) fld (parse newval))]
@@ -194,10 +194,37 @@ Este método no crea un nuevo ambiente.
                      (extend-frame-env! (car in-def) (cdr in-def) new-env)
                      #t)) defs)       
        (interp body new-env))]
-    [(class members) 'a]
-     
+    [(clas members) 
+     (def (cons fields methds) (member-separator members))
+     (let ([methods methds])
+       (letrec
+           ([class
+                (λ (msg . vals)
+                  (case msg
+                    [(create)
+                     (make-obj class
+                               (make-hash fields))]
+                    [(read)
+                     (def value (dict-ref (obj-values (first vals)) (id (second vals)) #f))
+                     (if (not value)
+                         (error "field not found")
+                         value)]
+                    [(write)
+                     (if (dict-ref (obj-values (first vals)) (id (second vals)) #f)
+                         (dict-set! (obj-values (first vals) (id (second vals)) (third vals)))
+                         (error "field not found"))]
+                    [(invoke)
+                     (define (interp-in-env body) (interp body env))
+                     (def method (assoc (id (second vals)) methods))
+                     (if method
+                         (let ([newenv (multi-extend-env (second method) (map interp-in-env (first (cddr vals))) env)])
+                           (begin
+                             (extend-frame-env! 'this (first vals) newenv)
+                             (interp (apply (cddr (assoc (id (second vals)) methods)) (cddr vals)) newenv)))
+                         (error "method not found"))]))])
+         class))]))
 
-    ))
+  
 
 ;; open-val :: Val -> Scheme Value
 (define (open-val v)
