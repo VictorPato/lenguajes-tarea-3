@@ -144,7 +144,7 @@ Este método no crea un nuevo ambiente.
     [(list 'seqn e1 e2) (seqn (parse e1) (parse e2))]    
     [(list 'local (list e ...)  b)
      (lcal (map parse-def e) (parse b))]
-    [(list 'class members)(clas (map parse members))]
+    [(list 'class members ...)(clas (map parse members))]
     [(list 'new cls)(new (parse cls))]
     [(list 'get obj fld)(get (parse obj) fld)]
     [(list 'set obj fld newval) (set (parse obj) fld (parse newval))]
@@ -165,8 +165,8 @@ Este método no crea un nuevo ambiente.
 (define (member-separator members)
   (define (mem-sep memb-list fld-list mtd-list)
     (match memb-list
-      [(list (field  mid bod) t ...) (mem-sep t (cons (cons mid bod) fld-list) mtd-list)]
-      [(list (method mid param body) t ...) (mem-sep t fld-list (cons (cons mid (cons param (λ param body))) mtd-list))]
+      [(list (field  mid bod) t ...) (mem-sep t (append (list (cons mid bod)) fld-list) mtd-list)]
+      [(list (method mid param body) t ...) (mem-sep t fld-list (append (list (cons mid (cons param (λ param body)))) mtd-list))]
       [(list) (cons fld-list mtd-list)]))
   (mem-sep members (list) (list)))
 
@@ -201,29 +201,31 @@ Este método no crea un nuevo ambiente.
            ([class
                 (λ (msg . vals)
                   (case msg
-                    [(create)
+                    [(create) ;new
                      (make-obj class
                                (make-hash fields))]
-                    [(read)
+                    [(read) ;get
                      (def value (dict-ref (obj-values (first vals)) (id (second vals)) #f))
                      (if (not value)
                          (error "field not found")
                          value)]
-                    [(write)
+                    [(write) ;set
                      (if (dict-ref (obj-values (first vals)) (id (second vals)) #f)
-                         (dict-set! (obj-values (first vals) (id (second vals)) (third vals)))
+                         (dict-set! (obj-values (first vals)) (id (second vals)) (third vals))
                          (error "field not found"))]
-                    [(invoke)
-                     (define (interp-in-env body) (interp body env))
+                    [(invoke) ;send
                      (def method (assoc (id (second vals)) methods))
+                     (define (interp-in-env body) (interp body env))
                      (if method
-                         (let ([newenv (multi-extend-env (second method) (map interp-in-env (first (cddr vals))) env)])
+                         (let ([newenv (multi-extend-env (cadr method) (map interp-in-env (first (cddr vals))) env)])
                            (begin
                              (extend-frame-env! 'this (first vals) newenv)
-                             (interp (apply (cddr (assoc (id (second vals)) methods)) (cddr vals)) newenv)))
+                             (interp
+                              (apply (cddr (assoc (id (second vals)) methods)) (cddr vals))
+                              newenv)))
                          (error "method not found"))]))])
          class))]
-    [(new cls) ((interp cls) 'create)]
+    [(new cls) ((interp cls env) 'create)]
     [(get oj fld)(interp
                   (let ([obj (interp oj env)])
                     ((obj-class obj) 'read obj fld))
