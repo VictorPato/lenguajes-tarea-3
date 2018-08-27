@@ -1,6 +1,6 @@
 #lang play
 (require "main.rkt")
-(print-only-errors)
+;(print-only-errors)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                 TESTS BASE                                  ;
@@ -23,3 +23,9 @@
 ;                                  SUS TESTS                                  ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; continuando con los tests de la base para ver como funciona el codigo
+
+(test (run-val '(local ((define a 1)(define b 2)(define c 3))
+                  (if (= a 1)
+                      b
+                      c))) 2)
