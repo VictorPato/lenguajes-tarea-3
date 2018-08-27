@@ -45,11 +45,11 @@
   (my-if c tb fb)  
   (seqn expr1 expr2)  
   (lcal defs body)
-  (class defs)
+  (class members)
   (new cls)
-  (get obj fld)
-  (set obj fld newval)
-  (send obj msg vals)
+  (get oj fld)
+  (set oj fld newval)
+  (send oj msg vals)
   (this))
 
 ;; values
@@ -64,6 +64,7 @@
   (field mid val)
   (method mid param body))
 
+(define-struct obj (class values))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 #|
@@ -143,7 +144,7 @@ Este método no crea un nuevo ambiente.
     [(list 'seqn e1 e2) (seqn (parse e1) (parse e2))]    
     [(list 'local (list e ...)  b)
      (lcal (map parse-def e) (parse b))]
-    [(list 'class defs)(class (map parse defs))]
+    [(list 'class members)(class (map parse members))]
     [(list 'new cls)(new (parse cls))]
     [(list 'get obj fld)(get (parse obj) fld)]
     [(list 'set obj fld newval) (set (parse obj) fld (parse newval))]
@@ -157,6 +158,17 @@ Este método no crea un nuevo ambiente.
 (define (parse-def s-expr)
   (match s-expr
     [(list 'define id b) (my-def id (parse b))]))
+
+
+;; member-separator :: list -> cons
+;; toma una lista con fields y methods y retorna un cons con una lista de fields interpretados y otra de methods interpretados
+(define (member-separator members)
+  (define (mem-sep memb-list fld-list mtd-list)
+    (match memb-list
+      [(list (field  mid bod) t ...) (mem-sep t (cons (cons mid bod) fld-list) mtd-list)]
+      [(list (method mid param body) t ...) (mem-sep t fld-list (cons (cons mid (cons param (λ param body))) mtd-list))]
+      [(list) (cons fld-list mtd-list)]))
+  (mem-sep members (list) (list)))
 
 ;; interp :: Expr Env -> Val
 (define (interp expr env)
@@ -181,8 +193,11 @@ Este método no crea un nuevo ambiente.
                    (let ([in-def (interp-def x new-env)])
                      (extend-frame-env! (car in-def) (cdr in-def) new-env)
                      #t)) defs)       
-       (interp body new-env))     
-     ]))
+       (interp body new-env))]
+    [(class members) 'a]
+     
+
+    ))
 
 ;; open-val :: Val -> Scheme Value
 (define (open-val v)
